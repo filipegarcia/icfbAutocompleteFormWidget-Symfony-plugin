@@ -1,0 +1,78 @@
+icfbAutocompletePlugin - Facebook Autocomplete Symfony widget
+==============
+
+== Overview ==
+
+This plugins provides symfony wiget for facebook style autocomplete which can be used in various of situations like sending messages, etc...
+
+The widget uses fbautocomplete.js jquery plugin which is
+based on Dan Wellman article(http://net.tutsplus.com/tutorials/javascript-ajax/how-to-use-the-jquery-ui-autocomplete-widget/).
+
+The widget depends on jquery and jquery-ui autocompleter.
+
+== License ==
+
+For the full copyright and license information, please view the LICENSE
+file that was distributed with this source code.
+
+Installation
+------------
+
+  * Install the plugin
+		Download package from github
+        $ symfony plugin:install PATH_TO_PLUGIN/icfbAutocompletePlugin
+ 
+ Usage
+------------
+You can use widget with code like:
+	
+	$widget = new icfbAutocompleteFormWidget( array( 'url' => sfContext::getInstance()->getController()->genUrl('your route to action which will retrieve users') ) );
+
+Here you are all options which you can use:
+ * includeJQuery - set this to false if you already included jquery.js in your action/template
+ * includeJQueryUI - set this to false if you already included jquery-ui.js  and jquery-ui.css in your action/template
+ * isAjaxForm - if is false(by default) all js are loaded immediately. Otherwise you will need to call getGeneratedJS and static method includeJavaScripts manually
+ 
+* minLength – default is 1. Min length of characters to invoke ajax call
+* url – default is friends.php – url which will be called for retrieving list of users – url for your server response.
+* title – default is ‘Remove %s’. This is just title for link for removing already selected users. Handy if you have, for example, application in Serbian or other not English language.
+* useCache – default is true. Should plugin use caching? This is handy for optimization because same inputs doesnt require more than one xmlHttpRequest(ajax) call
+* formName – default is send_message[user]. This will be the name of hidden inputs fields when you submit the form which includes autompleter.
+* sendTitles: default is true. This means that you wont just send (after main form submiting) user ids, but also their titles(usernames,emails, etc) after main form submit.
+* onChangeFunc: function($obj){} – handler you can override if you want to do something after someone picks user from the list. $obj is main object of fbautomplete plugin(or invisible generated input[type=text] if you like)
+* onRemoveFunc: function($obj){ } – handler which will be called after removing user from list of selected.
+* onAlreadySelected: function($obj){} – handler which will be called if you try to add user which is already in list of selected.
+* maxUsers: – default 0(which means unlimited). Use this if you want to limit number of users.
+* onMaxSelectedFunc: function($obj){} – handler which will be called if you try add more then maxUsers users.
+* selected: [] – if you want to pass already selected users. For example: you did form submiting for sending message but you forgot to add subject. The array is array of objects in format [ {id: id1, title: 'title1'}, {id: id2, title: 'title2'}, ... ]
+* cache: {} – add already cached inputs.
+* generateUrl: function(url) – function can be used to generate dynamic retrieve url. Must return string
+* focusWhenClickOnParent: true - if you dont want to autofocus input when click on div parent set this to false
+* staticRetrieve: false - if you dont want ajax call just define this function(term) and return array or {id, title[,src]}
+* highlight: false - set this to true if you want to see highlighted parts of users titles which matches inputed term
+
+------------
+Simple action for retrieving users can look like:
+
+	class autocomplete_usersAction extends sfAction
+	{
+	 
+		public function execute( $request )
+		{
+				$term = $request->getParameter('term', '');
+				$c = new Criteria();
+				$c->add( sfGuardUserPeer::USERNAME, '%'.$term.'%', Criteria::LIKE );
+				$c->setLimit(10);
+				$omUsers = sfGuardUserPeer::doSelect($c);
+	 
+				$rv = '';
+				foreach ($omUsers as $omUser)
+				{
+					if ($rv != '') $rv .= ', ';
+					$rv .= '{ title: "'.htmlspecialchars($omUser->getUsername(), ENT_QUOTES, 'UTF-8').'"'.
+								', id: '.$omUser->getId().' } ';
+	 
+				}
+				return $this->renderText( "[$rv]" );
+		}
+	}
